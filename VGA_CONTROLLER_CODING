@@ -65,3 +65,87 @@ else
 v_count_next <= 0;
 end
 end
+
+// horizontal and vertical synchronization signals
+always @(posedge clk)
+if(h_count_reg < HR)
+h_sync_next <= 1;
+else
+h_sync_next <= 0;
+			
+	
+//VSync logic		
+	
+always @(posedge clk)
+if(v_count_reg < VR)
+v_sync_next <= 1;
+else
+v_sync_next <= 0;
+
+assign hsync = h_sync_next;
+assign vsync = v_sync_next;
+
+
+	
+reg h_video_on,v_video_on; // these registers ensure that the display signals are sent only when the pixels are within the display region of the monitor.
+//horizontal logic
+
+always @(posedge clk) 
+if((h_count_reg >= HR + HF) && (h_count_reg< HR + HF + HD))
+h_video_on <= 1;
+else
+h_video_on <= 0;
+			
+	
+//Vertical logic
+	
+always @(posedge clk)
+if((v_count_reg >= VR + VF) && (v_count_reg < VR + VF+ VD))
+v_video_on <= 1;
+else
+v_video_on <= 0;
+
+always @(posedge clk)
+if(h_video_on && v_video_on)
+video_on <= 1;
+else
+video_on <= 0;
+
+
+reg [9:0] pixel_x,pixel_y; // registers to describe current position of pixel within display area.
+
+always @(posedge clk)
+if(h_video_on)
+pixel_x <= h_count_reg - HR - HF;
+else
+pixel_x <= 0;
+
+always @(posedge clk) 
+if(v_video_on)
+pixel_y <= v_count_reg - VR - VF;
+else
+pixel_y <= 0;
+
+//color output
+reg [7:0] coloroutput; // 8 bit register which describes which color has to be displayed but only when video_on signal is turned on.
+
+always @(posedge clk)
+if(~video_on)
+coloroutput <= 0;
+else
+begin
+if(pixel_y<160)
+coloroutput[7:5] <= 3'b111;
+else if(pixel_y<320)
+coloroutput[4:2] <= 3'b111;
+else
+coloroutput[1:0] <= 2'b11;
+end
+
+
+assign red = coloroutput[7:5];
+assign green = coloroutput[4:2] ;
+assign blue = coloroutput[1:0] ;
+
+
+endmodule
